@@ -64,7 +64,13 @@ async def daily_post_generation_job() -> None:
             from app.services.notification_service import NotificationService
             from app.config import settings
             
-            preview_url = f"http://192.168.1.215:{settings.app_port}/api/v1/preview/{draft.id}/view"
+            # Use app_base_url if available (cloud), otherwise fallback to local IP for local testing
+            if settings.app_base_url:
+                base_url = settings.app_base_url.rstrip('/')
+            else:
+                base_url = f"http://192.168.1.215:{settings.app_port}"
+                
+            preview_url = f"{base_url}/api/v1/preview/{draft.id}/view"
             
             notifier = NotificationService()
             await notifier.send_message(

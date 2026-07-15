@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     app_env: Literal["development", "staging", "production"] = Field(default="development")
     app_host: str = Field(default="0.0.0.0")
     app_port: int = Field(default=8000)
+    app_base_url: str = Field(default="")
     debug: bool = Field(default=True)
     secret_key: str = Field(default="change-this-in-production")
 

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: linkedin-agent
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app.main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_BASE_URL
+        value: "" # Fill this in the Render dashboard
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: DATABASE_URL
+        value: sqlite:///./data/linkedin_agent.db
+      # You will need to add all your API keys and SMTP credentials as environment variables in the Render dashboard.
