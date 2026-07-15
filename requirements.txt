@@ -1,0 +1,67 @@
+# ============================================================
+# LinkedIn AI Agent — Python Dependencies
+# Install: pip install -r requirements.txt
+# Python 3.12+
+# ============================================================
+
+# ─── Web Framework ──────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+
+# ─── Database ───────────────────────────────────────────────
+sqlalchemy==2.0.36
+alembic==1.14.0
+aiosqlite==0.20.0          # Async SQLite driver
+
+# ─── Data Validation ────────────────────────────────────────
+pydantic>=2.10.3
+pydantic-settings==2.6.1
+
+# ─── HTTP Client ────────────────────────────────────────────
+httpx==0.28.1
+aiohttp>=3.11.10
+
+# ─── AI Providers ───────────────────────────────────────────
+openai==1.57.4
+google-generativeai==0.8.3
+
+# ─── Scheduling ─────────────────────────────────────────────
+apscheduler==3.10.4
+
+# ─── Environment ────────────────────────────────────────────
+python-dotenv==1.0.1
+
+# ─── Templating ─────────────────────────────────────────────
+jinja2==3.1.4
+
+# ─── Logging ────────────────────────────────────────────────
+loguru==0.7.3
+
+# ─── Security ───────────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+slowapi==0.1.9             # Rate limiting for FastAPI
+
+# ─── Utilities ──────────────────────────────────────────────
+python-dateutil==2.9.0
+pytz==2024.2
+tenacity==9.0.0            # Retry logic
+rich==13.9.4               # Beautiful terminal output
+
+# ─── Testing ────────────────────────────────────────────────
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+httpx==0.28.1              # Also used for TestClient
+respx==0.21.1              # Mock httpx requests
+
+# ─── Code Quality ───────────────────────────────────────────
+ruff==0.8.3
+black==24.10.0
+mypy==1.13.0
+pre-commit==4.0.1
+
+# ─── Type Stubs ─────────────────────────────────────────────
+types-python-dateutil==2.9.0.20241206
+types-pytz==2024.2.0.20241221

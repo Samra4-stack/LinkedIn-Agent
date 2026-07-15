@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Post Preview — {{ draft.topic }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f3f2ef;
+            color: #191919;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .container { max-width: 700px; margin: 0 auto; }
+        .header {
+            background: #0077b5;
+            color: white;
+            padding: 20px 24px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header h1 { font-size: 1.2rem; font-weight: 600; }
+        .header .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+        .card {
+            background: white;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .meta-bar {
+            display: flex;
+            gap: 16px;
+            padding: 12px 24px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+        .meta-bar span { display: flex; align-items: center; gap: 4px; }
+        .post-content { padding: 24px; }
+        .topic-badge {
+            display: inline-block;
+            background: #e7f3ff;
+            color: #0077b5;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .post-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #191919;
+        }
+        .post-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        .image-placeholder {
+            width: 100%;
+            height: 200px;
+            background: #f3f2ef;
+            border-radius: 8px;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+        .section { padding: 16px 24px; border-top: 1px solid #f0f0f0; }
+        .section h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        .hashtags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .hashtag {
+            background: #e7f3ff;
+            color: #0077b5;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .links { display: flex; flex-direction: column; gap: 8px; }
+        .link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            color: #0077b5;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        .link:hover { background: #e7f3ff; }
+        .actions {
+            padding: 20px 24px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 24px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #0077b5; color: white; }
+        .btn-primary:hover { background: #005e8e; }
+        .btn-secondary { background: white; color: #0077b5; border: 1.5px solid #0077b5; }
+        .btn-secondary:hover { background: #e7f3ff; }
+        .btn-danger { background: #fee2e2; color: #dc2626; }
+        .btn-danger:hover { background: #fecaca; }
+        .char-count {
+            font-size: 0.75rem;
+            color: {% if draft.char_count > 2000 %}#dc2626{% elif draft.char_count > 1500 %}#f59e0b{% else %}#16a34a{% endif %};
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+            </svg>
+            <h1>Post Preview</h1>
+            <span class="badge">Draft #{{ draft.id }}</span>
+        </div>
+
+        <div class="card">
+            <div class="meta-bar">
+                <span>📌 {{ draft.topic }}</span>
+                <span class="char-count">{{ draft.char_count }} chars</span>
+                <span>⏱️ ~{{ draft.read_time }}s read</span>
+                {% if draft.scheduled_time %}
+                <span>🕐 {{ draft.scheduled_time }}</span>
+                {% endif %}
+                <span>✏️ {{ draft.edit_count }} edits</span>
+            </div>
+
+            <div class="post-content">
+                <div class="topic-badge">{{ draft.topic }}</div>
+
+                {% if draft.image_url %}
+                <img class="post-image" src="{{ draft.image_url }}" alt="{{ draft.image_alt_text or draft.topic }}" />
+                {% else %}
+                <div class="image-placeholder">📷 No image attached</div>
+                {% endif %}
+
+                <div class="post-text" style="margin-top: 16px;">{{ draft.content }}</div>
+            </div>
+
+            <div class="section">
+                <h3>🏷️ Hashtags</h3>
+                <div class="hashtags">
+                    {% for tag in draft.hashtags %}
+                    <span class="hashtag">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if draft.links %}
+            <div class="section">
+                <h3>🔗 Relevant Links</h3>
+                <div class="links">
+                    {% for link in draft.links %}
+                    <a href="{{ link }}" target="_blank" rel="noopener" class="link">
+                        🌐 {{ link }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="actions">
+                <button class="btn btn-primary" onclick="approve()">✅ Publish</button>
+                <button class="btn btn-secondary" onclick="editContent()">✏️ Edit Content</button>
+                <button class="btn btn-secondary" onclick="changeImage()">🖼️ Change Image</button>
+                <button class="btn btn-secondary" onclick="regenerate()">🔄 Regenerate Post</button>
+                <button class="btn btn-secondary" onclick="regenerateHashtags()">🏷️ New Hashtags</button>
+                <button class="btn btn-secondary" onclick="changeLinks()">🔗 New Links</button>
+                <button class="btn btn-danger" onclick="cancel()">❌ Cancel</button>
+            </div>
+        </div>
+
+        <div style="text-align: center; padding: 16px; font-size: 0.75rem; color: #9ca3af;">
+            LinkedIn AI Agent • Draft generated {{ draft.created_at }} via {{ draft.ai_provider }}
+        </div>
+    </div>
+
+    <script>
+        const DRAFT_ID = {{ draft.id }};
+        const BASE_URL = '/api/v1';
+
+        async function callApi(endpoint, method, body) {
+            const res = await fetch(BASE_URL + endpoint, {
+                method, headers: {'Content-Type': 'application/json'},
+                body: body ? JSON.stringify(body) : undefined
+            });
+            return res.json();
+        }
+
+        async function approve() {
+            if (!confirm('Approve this draft for publishing?')) return;
+            const data = await callApi(`/preview/${DRAFT_ID}/approve`, 'POST');
+            if (data.status === 'approved') alert('✅ Approved! Now call POST /publish to publish.');
+            else alert(JSON.stringify(data));
+        }
+
+        async function cancel() {
+            if (!confirm('Cancel this draft?')) return;
+            await callApi(`/preview/${DRAFT_ID}/cancel`, 'POST');
+            alert('Draft cancelled.');
+        }
+
+        async function regenerate() {
+            const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['post']});
+            if (data.id) { alert('Post regenerated! Refreshing...'); location.reload(); }
+        }
+
+        async function regenerateHashtags() {
+            const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['hashtags']});
+            if (data.id) { alert('Hashtags regenerated! Refreshing...'); location.reload(); }
+        }
+
+        async function changeImage() {
+            const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['image']});
+            if (data.id) { alert('Image updated! Refreshing...'); location.reload(); }
+        }
+
+        async function changeLinks() {
+            const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['links']});
+            if (data.id) { alert('Links updated! Refreshing...'); location.reload(); }
+        }
+
+        function editContent() {
+            const newContent = prompt('Edit post content:', document.querySelector('.post-text').textContent);
+            if (newContent) {
+                callApi('/edit', 'POST', {draft_id: DRAFT_ID, field: 'content', value: newContent})
+                    .then(() => location.reload());
+            }
+        }
+    </script>
+</body>
+</html>
