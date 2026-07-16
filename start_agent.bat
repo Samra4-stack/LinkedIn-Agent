@@ -1,19 +1,16 @@
 @echo off
-echo ==============================================
-echo       Starting LinkedIn AI Agent...
-echo ==============================================
-echo.
+:: ============================================
+:: LinkedIn AI Agent — Silent Auto-Starter
+:: Starts FastAPI server + Localtunnel quietly
+:: ============================================
 
-echo [1/2] Starting FastAPI Server on port 8000...
-start cmd /k "cd /d %~dp0 && call venv\Scripts\activate && uvicorn app.main:app --reload"
+cd /d "%~dp0"
 
-echo [2/2] Starting public tunnel (localtunnel)...
-start cmd /k "cd /d %~dp0 && npx localtunnel --port 8000 --subdomain linkedin-agent-samra"
+:: Start FastAPI server (minimized)
+start /min "LinkedIn-Agent-Server" cmd /c "call venv\Scripts\activate && uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
-echo.
-echo ==============================================
-echo  Agent is running in the background windows!
-echo  URL: https://linkedin-agent-samra.loca.lt
-echo ==============================================
-echo You can safely close this initial window.
-timeout /t 5 > nul
+:: Wait 5 seconds for server to boot before starting tunnel
+timeout /t 5 /nobreak > nul
+
+:: Start localtunnel (minimized)
+start /min "LinkedIn-Agent-Tunnel" cmd /c "npx localtunnel --port 8000 --subdomain linkedin-agent-samra"
