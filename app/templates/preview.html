@@ -226,10 +226,27 @@
         }
 
         async function approve() {
-            if (!confirm('Approve this draft for publishing?')) return;
-            const data = await callApi(`/preview/${DRAFT_ID}/approve`, 'POST');
-            if (data.status === 'approved') alert('✅ Approved! Now call POST /publish to publish.');
-            else alert(JSON.stringify(data));
+            if (!confirm('Approve this draft and publish it directly to LinkedIn?')) return;
+            try {
+                const data = await callApi(`/preview/${DRAFT_ID}/approve`, 'POST');
+                if (data.status === 'approved') {
+                    alert('✅ Draft Approved! Now publishing to LinkedIn...');
+                    const publishData = await callApi('/publish', 'POST', {draft_id: DRAFT_ID, confirm: true});
+                    if (publishData.linkedin_post_url) {
+                        alert('🎉 Successfully Published to LinkedIn!\n\nView Post: ' + publishData.linkedin_post_url);
+                    } else if (publishData.detail) {
+                        alert('Publish Error: ' + publishData.detail);
+                    } else {
+                        alert('Publish Error: ' + JSON.stringify(publishData));
+                    }
+                } else if (data.detail) {
+                    alert('Approval failed: ' + data.detail);
+                } else {
+                    alert('Approval failed: ' + JSON.stringify(data));
+                }
+            } catch (err) {
+                alert('Network or Server Error: ' + err.message);
+            }
         }
 
         async function cancel() {

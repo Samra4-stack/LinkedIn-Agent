@@ -8,6 +8,8 @@ Returns image URL, source, and alt text.
 
 from __future__ import annotations
 
+import random
+import time
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -118,7 +120,8 @@ class ImageService:
                 "https://api.unsplash.com/search/photos",
                 params={
                     "query": query,
-                    "per_page": 10,
+                    "per_page": 20,
+                    "page": random.randint(1, 3),
                     "orientation": "landscape",
                     "content_filter": "high",
                 },
@@ -131,10 +134,14 @@ class ImageService:
             if not photos:
                 return None
 
-            # Pick the photo with highest quality (first result after relevance sort)
-            photo = photos[0]
+            # Pick a random photo from the results so clicking "Change Image" actually changes it
+            photo = random.choice(photos)
+            
+            # Add timestamp to bypass browser cache
+            image_url = f"{photo['urls']['regular']}&t={int(time.time())}"
+            
             return ImageResult(
-                url=photo["urls"]["regular"],
+                url=image_url,
                 source="unsplash",
                 alt_text=photo.get("alt_description") or f"{topic} - Photo by {photo['user']['name']}",
                 photographer=photo["user"]["name"],
@@ -152,7 +159,8 @@ class ImageService:
                 "https://api.pexels.com/v1/search",
                 params={
                     "query": query,
-                    "per_page": 10,
+                    "per_page": 20,
+                    "page": random.randint(1, 3),
                     "orientation": "landscape",
                 },
                 headers={"Authorization": settings.pexels_api_key},
@@ -164,9 +172,13 @@ class ImageService:
             if not photos:
                 return None
 
-            photo = photos[0]
+            photo = random.choice(photos)
+            
+            # Add timestamp to bypass browser cache
+            image_url = f"{photo['src']['large2x']}?t={int(time.time())}"
+            
             return ImageResult(
-                url=photo["src"]["large2x"],
+                url=image_url,
                 source="pexels",
                 alt_text=photo.get("alt") or f"{topic} - Photo by {photo['photographer']}",
                 photographer=photo["photographer"],
@@ -188,7 +200,8 @@ class ImageService:
                     "orientation": "horizontal",
                     "category": "science,technology,business",
                     "safesearch": "true",
-                    "per_page": 10,
+                    "per_page": 20,
+                    "page": random.randint(1, 3),
                 },
             )
             response.raise_for_status()
@@ -198,9 +211,13 @@ class ImageService:
             if not hits:
                 return None
 
-            photo = hits[0]
+            photo = random.choice(hits)
+            
+            # Add timestamp to bypass browser cache
+            image_url = f"{photo['largeImageURL']}?t={int(time.time())}"
+            
             return ImageResult(
-                url=photo["largeImageURL"],
+                url=image_url,
                 source="pixabay",
                 alt_text=f"{topic} - via Pixabay",
                 photographer=photo.get("user"),
