@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     secret_key: str = Field(default="change-this-in-production")
 
     # ─── Database ─────────────────────────────────────────────
-    database_url: str = Field(default="sqlite:///./linkedin_agent.db")
+    database_url: str = Field(default="sqlite:////app/data/linkedin_agent.db")
 
     # ─── AI Providers ─────────────────────────────────────────
     # Supported: "groq" | "gemini" | "openai"
