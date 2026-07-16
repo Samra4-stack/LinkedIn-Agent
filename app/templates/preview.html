@@ -200,7 +200,8 @@
             <div class="actions">
                 <button class="btn btn-primary" onclick="approve()">✅ Publish</button>
                 <button class="btn btn-secondary" onclick="editContent()">✏️ Edit Content</button>
-                <button class="btn btn-secondary" onclick="changeImage()">🖼️ Change Image</button>
+                <button class="btn btn-secondary" onclick="uploadCustomImage()">📸 Upload from Gallery</button>
+                <button class="btn btn-secondary" onclick="changeImage()">🖼️ New AI Image</button>
                 <button class="btn btn-secondary" onclick="regenerate()">🔄 Regenerate Post</button>
                 <button class="btn btn-secondary" onclick="regenerateHashtags()">🏷️ New Hashtags</button>
                 <button class="btn btn-secondary" onclick="changeLinks()">🔗 New Links</button>
@@ -281,6 +282,65 @@
                 callApi('/edit', 'POST', {draft_id: DRAFT_ID, field: 'content', value: newContent})
                     .then(() => location.reload());
             }
+        }
+
+        function uploadCustomImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/jpeg, image/png, image/webp';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Compress image in browser to fit within Vercel's 4.5MB limit
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = async () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1200;
+                        const MAX_HEIGHT = 1200;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Output as compressed JPEG base64
+                        const base64Data = canvas.toDataURL('image/jpeg', 0.85);
+
+                        try {
+                            alert("Uploading compressed image...");
+                            const res = await callApi(`/preview/${DRAFT_ID}/upload-image`, 'POST', { image_base64: base64Data });
+                            if (res.success) {
+                                alert('✅ Image uploaded successfully!');
+                                location.reload();
+                            } else {
+                                alert('Upload failed: ' + (res.detail || res.error));
+                            }
+                        } catch (err) {
+                            alert('Network or Server Error: ' + err.message);
+                        }
+                    };
+                };
+            };
+            input.click();
         }
     </script>
 </body>

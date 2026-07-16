@@ -192,10 +192,16 @@ class LinkedInService:
                 upload_url = init_data["value"]["uploadUrl"]
                 image_urn = init_data["value"]["image"]
 
-                # Step 2: Download image bytes
-                img_response = await client.get(image_url)
-                img_response.raise_for_status()
-                image_bytes = img_response.content
+                # Step 2: Download image bytes OR decode base64
+                if image_url.startswith("data:image/"):
+                    import base64
+                    # Format is data:image/jpeg;base64,.....
+                    header, encoded = image_url.split(",", 1)
+                    image_bytes = base64.b64decode(encoded)
+                else:
+                    img_response = await client.get(image_url)
+                    img_response.raise_for_status()
+                    image_bytes = img_response.content
 
                 # Step 3: Upload binary to LinkedIn
                 upload_response = await client.put(

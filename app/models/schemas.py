@@ -150,6 +150,10 @@ class PreviewResponse(BaseModel):
         ]
     )
 
+class UploadImageRequest(BaseModel):
+    """Payload for uploading a base64 image from the gallery."""
+    image_base64: str = Field(..., description="Base64 encoded string of the compressed image")
+
 
 # ─── Edit ────────────────────────────────────────────────────
 

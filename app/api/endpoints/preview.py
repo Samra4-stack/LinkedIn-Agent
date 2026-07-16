@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.agents.review_agent import ReviewAgent, ReviewError
 from app.database.base import get_db
-from app.models.schemas import DraftSchema, PreviewResponse, SuccessResponse
+from app.models.schemas import DraftSchema, PreviewResponse, SuccessResponse, UploadImageRequest
 from app.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -147,3 +147,29 @@ async def cancel_draft(
         return SuccessResponse(message=f"Draft {draft_id} cancelled successfully")
     except ReviewError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
+    "/preview/{draft_id}/upload-image",
+    response_model=SuccessResponse,
+    summary="Upload custom image to a draft",
+    tags=["Review"],
+)
+async def upload_custom_image(
+    request_data: UploadImageRequest,
+    draft_id: int = Path(..., description="ID of the draft", ge=1),
+    db: Session = Depends(get_db),
+) -> SuccessResponse:
+    """Upload a custom image (base64) to attach to the draft."""
+    log.info(f"POST /preview/{draft_id}/upload-image")
+    from app.database.models import Draft
+    draft = db.query(Draft).filter(Draft.id == draft_id).first()
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+        
+    draft.image_url = request_data.image_base64
+    draft.image_source = "gallery"
+    db.commit()
+    
+    return SuccessResponse(message="Image updated successfully")
+
