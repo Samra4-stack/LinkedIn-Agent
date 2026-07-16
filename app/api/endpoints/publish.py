@@ -79,9 +79,19 @@ async def publish_post(
 
     # ── Step 3: Publish to LinkedIn ───────────────────────────
     linkedin = LinkedInService(access_token=draft.user.access_token if draft.user else None)
+    
+    # Construct final post text with links and hashtags
+    final_content = draft.content
+    if draft.links:
+        final_content += "\n\n🔗 Relevant Links:\n"
+        for link in draft.links:
+            final_content += f"• {link}\n"
+    if draft.hashtags:
+        final_content += "\n\n" + " ".join(draft.hashtags)
+        
     try:
         result = await linkedin.publish_post(
-            content=draft.content,
+            content=final_content,
             image_url=draft.image_url,
             image_alt_text=draft.image_alt_text,
         )
