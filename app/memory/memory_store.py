@@ -38,8 +38,8 @@ class MemoryStore:
 
     def __init__(self, file_path: Optional[str] = None) -> None:
         import os
+        # Always try /tmp first on Vercel; fall back silently for any read-only FS
         if os.environ.get("VERCEL"):
-            # Use /tmp directory on Vercel since root filesystem is read-only
             self.file_path = Path("/tmp/memory.json")
         else:
             self.file_path = Path(file_path or settings.memory_file_path)
@@ -48,10 +48,11 @@ class MemoryStore:
         self._memory: Dict[str, Any] = self._load()
 
     def _ensure_directory(self) -> None:
-        """Create the data directory if it doesn't exist."""
+        """Create the data directory if it doesn't exist. Silently ignores read-only FS."""
         try:
             self.file_path.parent.mkdir(parents=True, exist_ok=True)
-        except OSError:
+        except (OSError, PermissionError, Exception):
+            # On Vercel and other read-only environments, silently skip
             pass
 
     def _load(self) -> Dict[str, Any]:
@@ -295,5 +296,32 @@ class MemoryStore:
         log.warning("Memory store reset to defaults")
 
 
-# Module-level singleton
-memory_store = MemoryStore()
+# Lazy singleton proxy — does NOT run at import time (safe for serverless)
+class _LazyMemoryStore:
+    """Proxy that creates the real MemoryStore only on first attribute access."""
+    _instance: Optional["MemoryStore"] = None
+
+    def _get(self) -> "MemoryStore":
+        if self._instance is None:
+            try:
+                self._instance = MemoryStore()
+            except Exception as e:
+                log.warning(f"MemoryStore init failed, using in-memory fallback: {e}")
+                # Create with in-memory only (no file)
+                obj = object.__new__(MemoryStore)
+                obj.file_path = Path("/tmp/memory.json")
+                obj._memory = obj._default_memory()  # type: ignore[attr-defined]
+                self._instance = obj
+        return self._instance
+
+    def __getattr__(self, name: str):
+        return getattr(self._get(), name)
+
+    def __setattr__(self, name: str, value):
+        if name.startswith("_"):
+            super().__setattr__(name, value)
+        else:
+            setattr(self._get(), name, value)
+
+
+memory_store = _LazyMemoryStore()  # type: ignore[assignment]
