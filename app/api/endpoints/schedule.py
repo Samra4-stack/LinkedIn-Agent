@@ -131,6 +131,33 @@ async def trigger_now() -> SuccessResponse:
     )
 
 
+@router.get(
+    "/schedule/cron-trigger",
+    response_model=SuccessResponse,
+    summary="Vercel Cron Trigger",
+    description="Trigger generation from Vercel Cron. Requires GET.",
+    tags=["Scheduler"],
+)
+async def vercel_cron_trigger() -> SuccessResponse:
+    """Manually trigger post generation from Vercel Cron."""
+    log.info("GET /schedule/cron-trigger — Vercel Cron triggered")
+    
+    from app.scheduler.jobs import daily_post_generation_job
+    try:
+        # Await it directly so Vercel waits for it to finish before responding
+        await daily_post_generation_job()
+    except Exception as e:
+        log.error(f"Vercel Cron job failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to run cron job: {e}",
+        )
+        
+    return SuccessResponse(
+        message="Post generation triggered via Vercel Cron."
+    )
+
+
 @router.post(
     "/schedule/pause",
     response_model=SuccessResponse,

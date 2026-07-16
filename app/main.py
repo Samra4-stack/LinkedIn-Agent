@@ -51,19 +51,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize database
     init_db()
 
-    # Start scheduler
-    scheduler_service.start()
-    log.info(
-        f"Scheduler running | daily job at "
-        f"{settings.scheduler_hour:02d}:{settings.scheduler_minute:02d} "
-        f"{settings.scheduler_timezone}"
-    )
+    # Scheduler is disabled for Serverless deployment. 
+    # Vercel Cron will hit /api/v1/schedule/cron-trigger instead.
+    # scheduler_service.start()
 
     yield  # Application runs here
 
     # Shutdown
     log.info("Shutting down...")
-    scheduler_service.stop()
+    # scheduler_service.stop()
     log.info(f"{settings.app_name} stopped")
 
 

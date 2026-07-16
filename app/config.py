@@ -156,6 +156,13 @@ class Settings(BaseSettings):
             return self.openai_model
         return self.groq_model
 
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return v
+
     @field_validator("scheduler_hour")
     @classmethod
     def validate_hour(cls, v: int) -> int:
