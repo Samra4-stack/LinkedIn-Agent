@@ -37,13 +37,22 @@ class MemoryStore:
     """
 
     def __init__(self, file_path: Optional[str] = None) -> None:
-        self.file_path = Path(file_path or settings.memory_file_path)
+        import os
+        if os.environ.get("VERCEL"):
+            # Use /tmp directory on Vercel since root filesystem is read-only
+            self.file_path = Path("/tmp/memory.json")
+        else:
+            self.file_path = Path(file_path or settings.memory_file_path)
+        
         self._ensure_directory()
         self._memory: Dict[str, Any] = self._load()
 
     def _ensure_directory(self) -> None:
         """Create the data directory if it doesn't exist."""
-        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
 
     def _load(self) -> Dict[str, Any]:
         """Load memory from JSON file."""

@@ -24,11 +24,7 @@ def setup_logging() -> None:
     """
     # Remove default handler
     logger.remove()
-
-    # Ensure log directory exists
-    log_path = Path(settings.log_file_path)
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-
+    
     # ── Console handler ─────────────────────────────────────
     log_format = (
         "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
@@ -46,17 +42,25 @@ def setup_logging() -> None:
     )
 
     # ── File handler (structured) ────────────────────────────
-    logger.add(
-        settings.log_file_path,
-        format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} | {message}",
-        level=settings.log_level,
-        rotation=settings.log_rotation,
-        retention=settings.log_retention,
-        compression="zip",
-        backtrace=True,
-        diagnose=False,  # Disable in file to avoid sensitive data leakage
-        enqueue=True,    # Thread-safe async logging
-    )
+    # In serverless environments (Vercel), the filesystem is read-only except /tmp
+    # and stdout is automatically collected, so file logging is disabled.
+    import os
+    if not os.environ.get("VERCEL"):
+        # Ensure log directory exists
+        log_path = Path(settings.log_file_path)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        logger.add(
+            settings.log_file_path,
+            format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} | {message}",
+            level=settings.log_level,
+            rotation=settings.log_rotation,
+            retention=settings.log_retention,
+            compression="zip",
+            backtrace=True,
+            diagnose=False,  # Disable in file to avoid sensitive data leakage
+            enqueue=True,    # Thread-safe async logging
+        )
 
     logger.info(f"Logging initialized | level={settings.log_level} | file={settings.log_file_path}")
 
