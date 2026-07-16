@@ -159,8 +159,12 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def validate_database_url(cls, v: str) -> str:
+        # Supabase provides postgres:// or postgresql:// URLs.
+        # We need to use psycopg3, so the SQLAlchemy prefix must be postgresql+psycopg://
         if v.startswith("postgres://"):
-            return v.replace("postgres://", "postgresql://", 1)
+            v = v.replace("postgres://", "postgresql://", 1)
+        if v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+psycopg://", 1)
         return v
 
     @field_validator("scheduler_hour")

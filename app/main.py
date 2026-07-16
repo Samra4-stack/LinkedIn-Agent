@@ -38,6 +38,14 @@ setup_logging()
 log = get_logger(__name__)
 
 
+# ─── Initialization ────────────────────────────────────────────
+
+try:
+    init_db()
+    log.info("Database initialized successfully at startup.")
+except Exception as e:
+    log.error(f"Failed to initialize database at startup: {e}")
+
 # ─── Lifespan ────────────────────────────────────────────────
 
 @asynccontextmanager
@@ -47,9 +55,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Runs startup tasks before yielding, shutdown tasks after.
     """
     log.info(f"Starting {settings.app_name} | env={settings.app_env}")
-
-    # Initialize database
-    init_db()
 
     # Scheduler is disabled for Serverless deployment. 
     # Vercel Cron will hit /api/v1/schedule/cron-trigger instead.
