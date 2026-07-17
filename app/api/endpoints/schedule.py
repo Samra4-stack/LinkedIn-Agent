@@ -191,14 +191,13 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
     target_time = now.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
     time_diff = (now - target_time).total_seconds() / 60.0
     
-    # 6-minute window to catch the */5 cron job
-    if 0 <= time_diff <= 6:
+    # 30-minute window to catch delayed GitHub Actions cron jobs
+    if 0 <= time_diff <= 30:
         # Check if already ran today
         if job_record.last_run_at:
             last_run_local = job_record.last_run_at.astimezone(tz)
-            if last_run_local.date() == now.date() and last_run_local.hour == target_hour and last_run_local.minute == target_minute:
-                # To be safe, if we ran exactly within this 5 minute block today, skip
-                return SuccessResponse(message="Job already ran for this scheduled time today.")
+            if last_run_local.date() == now.date():
+                return SuccessResponse(message="Job already ran today.")
                 
         # Run it!
         log.info("Polling condition met! Triggering daily generation.")
