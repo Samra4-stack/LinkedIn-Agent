@@ -59,6 +59,26 @@ async def generate_post(
             style=payload.style,
             custom_instructions=payload.custom_instructions,
         )
+
+        # Send Notification
+        from app.services.notification_service import NotificationService
+        from app.config import settings
+        
+        # Build preview URL
+        app_base_url_str = str(settings.app_base_url) if settings.app_base_url else ""
+        if app_base_url_str and not app_base_url_str.endswith('.loca.lt'):
+            base_url = app_base_url_str.rstrip('/')
+        else:
+            base_url = f"http://localhost:{settings.app_port}"
+            
+        preview_url = f"{base_url}/api/v1/preview/{draft.id}/view"
+        
+        notifier = NotificationService()
+        await notifier.send_message(
+            message=f"New LinkedIn Draft Ready!\n\nTopic: {draft.topic}\nLength: {len(draft.content)} characters\n\nLog in to review and publish your post.",
+            html_preview_url=preview_url
+        )
+
     except AIServiceError as e:
         log.error(f"Generation failed: {e}")
         raise HTTPException(
@@ -76,5 +96,5 @@ async def generate_post(
         draft_id=draft.id,
         topic=draft.topic,
         status=draft.status,
-        preview_url=f"/preview/{draft.id}",
+        preview_url=f"/api/v1/preview/{draft.id}/view",
     )

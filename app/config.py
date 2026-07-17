@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     
     # ─── Notifications ───────────────────────────────────────
     smtp_server: str = Field(default="smtp.gmail.com")
-    smtp_port: int = Field(default=587)
+    smtp_port: int = Field(default=465)
     smtp_user: str = Field(default="")
     smtp_password: str = Field(default="")
     notification_email: str = Field(default="")
@@ -87,9 +87,6 @@ class Settings(BaseSettings):
 
     # ─── Email / SMTP (optional daily report) ────────────────
     smtp_host: str = Field(default="smtp.gmail.com")
-    smtp_port: int = Field(default=465)
-    smtp_user: str = Field(default="")
-    smtp_password: str = Field(default="")
     report_recipient: str = Field(default="")
 
     # ─── Content ─────────────────────────────────────────────

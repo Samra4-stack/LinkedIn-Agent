@@ -121,7 +121,9 @@ class LinkService:
             log.warning(f"DuckDuckGo search failed: {e}")
 
         # Supplement/fallback with curated links
-        curated = CURATED_LINKS.get(topic, CURATED_LINKS.get("Tech News", []))
+        import random
+        curated = CURATED_LINKS.get(topic, CURATED_LINKS.get("Tech News", [])).copy()
+        random.shuffle(curated)
         for link in curated:
             if len(links) >= count:
                 break

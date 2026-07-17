@@ -209,7 +209,7 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
             log.error(f"Poll trigger failed: {e}")
             raise HTTPException(status_code=500, detail=str(e))
             
-        return SuccessResponse(message="Scheduled job triggered successfully.")
+        
         
     return SuccessResponse(message=f"Current time ({now.strftime('%H:%M')}) is not within the window of target time ({target_hour:02d}:{target_minute:02d}).")
 

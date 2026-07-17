@@ -21,11 +21,12 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.config import settings
@@ -108,11 +109,13 @@ Configure your LinkedIn credentials in `.env`. OAuth2 flow available via `/auth/
 )
 
 # ─── Middleware ───────────────────────────────────────────────
+# Serve static files for email preview
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Rate limiting
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
+
 
 # CORS
 app.add_middleware(

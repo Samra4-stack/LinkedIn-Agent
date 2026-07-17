@@ -258,23 +258,39 @@
         }
 
         async function regenerate() {
-            const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['post']});
-            if (data.id) { alert('Post regenerated! Refreshing...'); location.reload(); }
+            try {
+                const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['post', 'image', 'links', 'hashtags']});
+                if (data.id) { alert('Post regenerated! Refreshing...'); location.reload(); }
+                else if (data.detail) { alert('Error: ' + data.detail); }
+                else { alert('Error: ' + JSON.stringify(data)); }
+            } catch (err) { alert('Network or Server Error: ' + err.message); }
         }
 
         async function regenerateHashtags() {
-            const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['hashtags']});
-            if (data.id) { alert('Hashtags regenerated! Refreshing...'); location.reload(); }
+            try {
+                const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['hashtags']});
+                if (data.id) { alert('Hashtags regenerated! Refreshing...'); location.reload(); }
+                else if (data.detail) { alert('Error: ' + data.detail); }
+                else { alert('Error: ' + JSON.stringify(data)); }
+            } catch (err) { alert('Network or Server Error: ' + err.message); }
         }
 
         async function changeImage() {
-            const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['image']});
-            if (data.id) { alert('Image updated! Refreshing...'); location.reload(); }
+            try {
+                const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['image']});
+                if (data.id) { alert('Image updated! Refreshing...'); location.reload(); }
+                else if (data.detail) { alert('Error: ' + data.detail); }
+                else { alert('Error: ' + JSON.stringify(data)); }
+            } catch (err) { alert('Network or Server Error: ' + err.message); }
         }
 
         async function changeLinks() {
-            const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['links']});
-            if (data.id) { alert('Links updated! Refreshing...'); location.reload(); }
+            try {
+                const data = await callApi('/regenerate', 'POST', {draft_id: DRAFT_ID, parts: ['links']});
+                if (data.id) { alert('Links updated! Refreshing...'); location.reload(); }
+                else if (data.detail) { alert('Error: ' + data.detail); }
+                else { alert('Error: ' + JSON.stringify(data)); }
+            } catch (err) { alert('Network or Server Error: ' + err.message); }
         }
 
         function editContent() {
