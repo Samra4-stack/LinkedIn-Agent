@@ -196,8 +196,9 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
         # Check if already ran today
         if job_record.last_run_at:
             last_run_local = job_record.last_run_at.astimezone(tz)
-            if last_run_local.date() == now.date():
-                return SuccessResponse(message="Job already ran today.")
+            # If the last run happened after the target time, it means we already executed this specific schedule
+            if last_run_local >= target_time:
+                return SuccessResponse(message="Job already ran for this target time today.")
                 
         # Run it!
         log.info("Polling condition met! Triggering daily generation.")
@@ -212,6 +213,18 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
         
     return SuccessResponse(message=f"Current time ({now.strftime('%H:%M')}) is not within the window of target time ({target_hour:02d}:{target_minute:02d}).")
 
+
+@router.get(
+    "/schedule/reset",
+    response_model=SuccessResponse,
+    summary="Reset today's execution flag",
+    description="Clears the last_run_at flag so the schedule can run again today.",
+    tags=["Scheduler"],
+)
+async def reset_schedule(db: Session = Depends(get_db)) -> SuccessResponse:
+    job_record = crud.get_or_create_scheduler_job(db, DAILY_JOB_ID, "Daily LinkedIn Post Generation")
+    crud.update_scheduler_job(db, job_record, last_run_at=None)
+    return SuccessResponse(message="Database cleared! You can now test the automation again today.")
 
 
 @router.post(
