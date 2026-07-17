@@ -69,19 +69,19 @@ async def update_schedule(
     """Update the daily generation schedule."""
     log.info(f"POST /schedule | {payload.hour:02d}:{payload.minute:02d} {payload.timezone}")
 
-    success = scheduler_service.reschedule(
-        hour=payload.hour,
-        minute=payload.minute,
-        timezone=payload.timezone,
-    )
-
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to reschedule job",
+    # On Vercel (serverless), APScheduler is not running.
+    # We save the schedule to the database and the /schedule/poll
+    # endpoint (called by GitHub Actions every 5 min) reads it.
+    import os
+    if not os.environ.get("VERCEL"):
+        # Only try APScheduler when running locally
+        scheduler_service.reschedule(
+            hour=payload.hour,
+            minute=payload.minute,
+            timezone=payload.timezone,
         )
 
-    # Update DB record
+    # Update DB record (this is what the poll endpoint reads)
     job_record = crud.get_or_create_scheduler_job(db, DAILY_JOB_ID, "Daily LinkedIn Post Generation")
     crud.update_scheduler_job(
         db,
@@ -92,10 +92,11 @@ async def update_schedule(
         is_active=payload.enabled,
     )
 
-    if not payload.enabled:
-        scheduler_service.pause()
-    else:
-        scheduler_service.resume()
+    if not os.environ.get("VERCEL"):
+        if not payload.enabled:
+            scheduler_service.pause()
+        else:
+            scheduler_service.resume()
 
     job_info = scheduler_service.get_job_info()
     return ScheduleResponse(
@@ -208,9 +209,9 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
         except Exception as e:
             log.error(f"Poll trigger failed: {e}")
             raise HTTPException(status_code=500, detail=str(e))
-            
-        
-        
+
+        return SuccessResponse(message="Scheduled job triggered successfully.")
+
     return SuccessResponse(message=f"Current time ({now.strftime('%H:%M')}) is not within the window of target time ({target_hour:02d}:{target_minute:02d}).")
 
 
