@@ -164,6 +164,57 @@ async def vercel_cron_trigger() -> SuccessResponse:
     )
 
 
+@router.get(
+    "/schedule/poll",
+    response_model=SuccessResponse,
+    summary="GitHub Actions Polling Endpoint",
+    description="Called every 5 minutes by GitHub Actions to execute dynamic scheduling.",
+    tags=["Scheduler"],
+)
+async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
+    """Check if it's time to run the daily job and execute if so."""
+    job_record = crud.get_or_create_scheduler_job(db, DAILY_JOB_ID, "Daily LinkedIn Post Generation")
+    
+    if not job_record.is_active:
+        return SuccessResponse(message="Scheduler is paused. Skipping.")
+        
+    from datetime import datetime
+    import pytz
+    
+    from app.config import settings
+    tz = pytz.timezone(job_record.timezone or settings.scheduler_timezone)
+    now = datetime.now(tz)
+    
+    target_hour = job_record.schedule_hour if job_record.schedule_hour is not None else settings.scheduler_hour
+    target_minute = job_record.schedule_minute if job_record.schedule_minute is not None else settings.scheduler_minute
+    
+    target_time = now.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
+    time_diff = (now - target_time).total_seconds() / 60.0
+    
+    # 6-minute window to catch the */5 cron job
+    if 0 <= time_diff <= 6:
+        # Check if already ran today
+        if job_record.last_run_at:
+            last_run_local = job_record.last_run_at.astimezone(tz)
+            if last_run_local.date() == now.date() and last_run_local.hour == target_hour and last_run_local.minute == target_minute:
+                # To be safe, if we ran exactly within this 5 minute block today, skip
+                return SuccessResponse(message="Job already ran for this scheduled time today.")
+                
+        # Run it!
+        log.info("Polling condition met! Triggering daily generation.")
+        from app.scheduler.jobs import daily_post_generation_job
+        try:
+            await daily_post_generation_job()
+        except Exception as e:
+            log.error(f"Poll trigger failed: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+            
+        return SuccessResponse(message="Scheduled job triggered successfully.")
+        
+    return SuccessResponse(message=f"Current time ({now.strftime('%H:%M')}) is not within the window of target time ({target_hour:02d}:{target_minute:02d}).")
+
+
+
 @router.post(
     "/schedule/pause",
     response_model=SuccessResponse,

@@ -1,0 +1,14 @@
+name: 5-Minute Scheduler Polling
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  poll-scheduler:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit Vercel Polling Endpoint
+        run: |
+          curl -s -X GET "https://linked-in-agent-lilac.vercel.app/api/v1/schedule/poll"

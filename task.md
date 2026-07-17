@@ -1,10 +1,9 @@
-# Task List
+# Execution Tasks
 
-- [x] Migrate from local SQLite to Supabase Postgres (Vercel Serverless compat)
-- [x] Fix module-level `memory_store` initialization crashing Vercel at import time
-- [x] Fix `api/index.py` top-level `app` static analysis issue
-- [x] Assist user with deploying correctly to Vercel and connecting Supabase (Transaction Pooler)
-- [x] Add ability to upload images from local gallery directly in the browser
-  - [x] Update frontend preview HTML with compression logic
-  - [x] Add backend FastAPI endpoint to receive Base64 images
-  - [x] Update LinkedIn Service to decode base64 before upload
+- `[x]` Update `post_prompt.py` to enforce professional emojis.
+- `[x]` Create `/api/v1/schedule/poll` endpoint for GitHub Actions polling.
+- `[x]` Create `.github/workflows/scheduler.yml` for 5-minute interval polling.
+- `[x]` Update `preview.html` to include a "Generate New Custom Topic" button with prompting logic.
+- `[x]` Verify API endpoint and HTML UI locally/conceptually.
+- `[ ]` Push changes to GitHub (triggers Vercel deployment).
+- `[ ]` Update `walkthrough.md`.

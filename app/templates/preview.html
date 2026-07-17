@@ -201,6 +201,7 @@
                 <button class="btn btn-primary" onclick="approve()">✅ Publish</button>
                 <button class="btn btn-secondary" onclick="editContent()">✏️ Edit Content</button>
                 <button class="btn btn-secondary" onclick="uploadCustomImage()">📸 Upload from Gallery</button>
+                <button class="btn btn-secondary" onclick="generateCustom()">💡 Generate New Topic</button>
                 <button class="btn btn-secondary" onclick="changeImage()">🖼️ New AI Image</button>
                 <button class="btn btn-secondary" onclick="regenerate()">🔄 Regenerate Post</button>
                 <button class="btn btn-secondary" onclick="regenerateHashtags()">🏷️ New Hashtags</button>
@@ -281,6 +282,25 @@
             if (newContent) {
                 callApi('/edit', 'POST', {draft_id: DRAFT_ID, field: 'content', value: newContent})
                     .then(() => location.reload());
+            }
+        }
+
+        async function generateCustom() {
+            const topic = prompt('Enter your custom topic for a new post:');
+            if (topic) {
+                alert('Generating new post... Please wait up to 30 seconds.');
+                try {
+                    const res = await callApi('/generate', 'POST', {topic: topic});
+                    if (res.preview_url) {
+                        window.location.href = res.preview_url;
+                    } else if (res.detail) {
+                        alert('Error: ' + res.detail);
+                    } else {
+                        alert('Error: ' + JSON.stringify(res));
+                    }
+                } catch (err) {
+                    alert('Network or Server Error: ' + err.message);
+                }
             }
         }
 

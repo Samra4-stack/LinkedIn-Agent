@@ -32,6 +32,7 @@ LinkedIn post formatting rules:
 - Use bullet points or numbered lists where appropriate
 - End with a clear CTA that invites comments/engagement
 - Keep total length between 500-2000 characters for optimal reach
+- Strategically use a few professional emojis (e.g., 🚀, 💡, 📊, ✅) to make the post engaging and readable, but avoid overusing casual emojis.
 """
 
 
