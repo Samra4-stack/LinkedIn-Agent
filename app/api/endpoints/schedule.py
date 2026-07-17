@@ -192,17 +192,17 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
     target_time = now.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
     time_diff = (now - target_time).total_seconds() / 60.0
     
-    # 30-minute window to catch delayed GitHub Actions cron jobs
-    if 0 <= time_diff <= 30:
+    # If the current time is at or after the target time today
+    if time_diff >= 0:
         # Check if already ran today
         if job_record.last_run_at:
             last_run_local = job_record.last_run_at.astimezone(tz)
-            # If the last run happened after the target time, it means we already executed this specific schedule
+            # If the last run happened on or after the target time today, skip
             if last_run_local >= target_time:
                 return SuccessResponse(message="Job already ran for this target time today.")
                 
-        # Run it!
-        log.info("Polling condition met! Triggering daily generation.")
+        # Run it! It's past the target time and hasn't run yet today.
+        log.info(f"Polling condition met! Target was {target_hour}:{target_minute}, time diff is {time_diff:.1f} mins.")
         from app.scheduler.jobs import daily_post_generation_job
         try:
             await daily_post_generation_job()
@@ -212,7 +212,7 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
 
         return SuccessResponse(message="Scheduled job triggered successfully.")
 
-    return SuccessResponse(message=f"Current time ({now.strftime('%H:%M')}) is not within the window of target time ({target_hour:02d}:{target_minute:02d}).")
+    return SuccessResponse(message=f"Current time ({now.strftime('%H:%M')}) is before target time ({target_hour:02d}:{target_minute:02d}).")
 
 
 @router.get(
