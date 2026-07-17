@@ -120,14 +120,20 @@ async def update_schedule(
 async def trigger_now() -> SuccessResponse:
     """Manually trigger post generation immediately."""
     log.info("POST /schedule/trigger — manual trigger")
-    success = scheduler_service.trigger_now()
-    if not success:
+    
+    from app.scheduler.jobs import daily_post_generation_job
+    try:
+        # Await directly so Vercel does not kill the thread before it finishes
+        await daily_post_generation_job()
+    except Exception as e:
+        log.error(f"Manual trigger failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to trigger job",
+            detail=f"Failed to trigger job: {e}",
         )
+
     return SuccessResponse(
-        message="Post generation triggered. Check GET /history for the new draft shortly."
+        message="Post generation triggered and completed successfully. Check GET /history for the new draft."
     )
 
 
