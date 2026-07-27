@@ -58,6 +58,7 @@ async def generate_post(
             image_provider=payload.image_provider,
             style=payload.style,
             custom_instructions=payload.custom_instructions,
+            link=payload.link,
         )
 
         # Send Notification

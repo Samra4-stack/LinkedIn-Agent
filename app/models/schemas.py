@@ -66,6 +66,10 @@ class GenerateRequest(BaseModel):
         description="Additional instructions for the AI",
         max_length=500,
     )
+    link: Optional[str] = Field(
+        default=None,
+        description="Optional link to include in the post",
+    )
 
     @field_validator("ai_provider")
     @classmethod

@@ -341,7 +341,14 @@ def get_history(db: Session, skip: int = 0, limit: int = 50) -> List[PostHistory
 def get_or_create_scheduler_job(db: Session, job_id: str, job_name: str) -> SchedulerJob:
     job = db.query(SchedulerJob).filter(SchedulerJob.job_id == job_id).first()
     if not job:
-        job = SchedulerJob(job_id=job_id, job_name=job_name)
+        from app.config import settings
+        job = SchedulerJob(
+            job_id=job_id, 
+            job_name=job_name,
+            schedule_hour=settings.scheduler_hour,
+            schedule_minute=settings.scheduler_minute,
+            timezone=settings.scheduler_timezone
+        )
         db.add(job)
         db.commit()
         db.refresh(job)

@@ -98,6 +98,7 @@ class Settings(BaseSettings):
     max_hashtags: int = Field(default=10)
     post_min_length: int = Field(default=500)
     post_max_length: int = Field(default=2500)
+    default_post_link: str = Field(default="")
 
     # ─── Memory ──────────────────────────────────────────────
     memory_file_path: str = Field(default="./data/memory.json")

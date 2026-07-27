@@ -46,6 +46,7 @@ class ContentAgent:
         image_provider: Optional[str] = None,
         style: Optional[str] = None,
         custom_instructions: Optional[str] = None,
+        link: Optional[str] = None,
         user_id: Optional[int] = None,
     ) -> Draft:
         """
@@ -89,13 +90,20 @@ class ContentAgent:
 
         log.info(f"Starting content generation | topic={topic} | style={writing_style}")
 
+        # Incorporate link and picture quality into custom instructions
+        enhanced_instructions = custom_instructions or ""
+        if link:
+            enhanced_instructions += f"\nMake sure to explicitly mention and seamlessly integrate this link in the post: {link}"
+        enhanced_instructions += "\nAlso, the post should be highly engaging and suggest visually stunning imagery in the hook to ensure a good picture is fetched."
+
+
         # ── Step 3: Generate post content ────────────────────
         ai = AIService(provider=ai_provider)
         try:
             generated = await ai.generate_post(
                 topic=topic,
                 style=writing_style,
-                custom_instructions=custom_instructions,
+                custom_instructions=enhanced_instructions.strip(),
                 recent_topics=avoid_context[:10],
                 preferred_hashtags=preferred_hashtags,
                 language=language,
@@ -139,6 +147,8 @@ class ContentAgent:
             count=3,
         )
         link_urls = link_service.get_urls_only(links_data)
+        if link and link not in link_urls:
+            link_urls.append(link)
 
         # ── Step 8: Determine AI model used ──────────────────
         provider_used = ai_provider or settings.ai_provider

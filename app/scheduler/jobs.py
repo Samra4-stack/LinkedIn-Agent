@@ -38,7 +38,7 @@ async def daily_post_generation_job() -> None:
         try:
             # Generate the post
             agent = ContentAgent(db=db)
-            draft = await agent.generate_post()
+            draft = await agent.generate_post(link=settings.default_post_link if hasattr(settings, 'default_post_link') and settings.default_post_link else None)
 
             log.info(
                 f"Daily job completed | draft_id={draft.id} | topic={draft.topic} | "

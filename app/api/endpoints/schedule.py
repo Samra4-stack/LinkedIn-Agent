@@ -38,8 +38,8 @@ async def get_schedule(db: Session = Depends(get_db)) -> ScheduleResponse:
     from app.config import settings
     return ScheduleResponse(
         job_id=DAILY_JOB_ID,
-        hour=job_record.schedule_hour or settings.scheduler_hour,
-        minute=job_record.schedule_minute or settings.scheduler_minute,
+        hour=job_record.schedule_hour if job_record.schedule_hour is not None else settings.scheduler_hour,
+        minute=job_record.schedule_minute if job_record.schedule_minute is not None else settings.scheduler_minute,
         timezone=job_record.timezone or settings.scheduler_timezone,
         enabled=job_record.is_active,
         next_run_at=job_info.get("next_run_at"),
@@ -69,19 +69,7 @@ async def update_schedule(
     """Update the daily generation schedule."""
     log.info(f"POST /schedule | {payload.hour:02d}:{payload.minute:02d} {payload.timezone}")
 
-    # On Vercel (serverless), APScheduler is not running.
-    # We save the schedule to the database and the /schedule/poll
-    # endpoint (called by GitHub Actions every 5 min) reads it.
-    import os
-    if not os.environ.get("VERCEL"):
-        # Only try APScheduler when running locally
-        scheduler_service.reschedule(
-            hour=payload.hour,
-            minute=payload.minute,
-            timezone=payload.timezone,
-        )
-
-    # Update DB record (this is what the poll endpoint reads)
+    # Update DB record FIRST (this is what the poll endpoint reads, and what _register_daily_job falls back to)
     job_record = crud.get_or_create_scheduler_job(db, DAILY_JOB_ID, "Daily LinkedIn Post Generation")
     crud.update_scheduler_job(
         db,
@@ -92,7 +80,14 @@ async def update_schedule(
         is_active=payload.enabled,
     )
 
+    import os
     if not os.environ.get("VERCEL"):
+        # Only try APScheduler when running locally
+        scheduler_service.reschedule(
+            hour=payload.hour,
+            minute=payload.minute,
+            timezone=payload.timezone,
+        )
         if not payload.enabled:
             scheduler_service.pause()
         else:

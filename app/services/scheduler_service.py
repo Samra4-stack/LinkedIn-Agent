@@ -53,24 +53,45 @@ class SchedulerService:
     def _register_daily_job(self) -> None:
         """Register the daily post generation job."""
         from app.scheduler.jobs import daily_post_generation_job
+        from app.database.base import SessionLocal
+        from app.database.crud import get_or_create_scheduler_job
+
+        db = SessionLocal()
+        try:
+            job_record = get_or_create_scheduler_job(db, DAILY_JOB_ID, "Daily LinkedIn Post Generation")
+            hour = job_record.schedule_hour if job_record.schedule_hour is not None else settings.scheduler_hour
+            minute = job_record.schedule_minute if job_record.schedule_minute is not None else settings.scheduler_minute
+            timezone_str = job_record.timezone or settings.scheduler_timezone
+            is_active = job_record.is_active if job_record.is_active is not None else True
+        except Exception as e:
+            log.error(f"Failed to fetch job settings from DB: {e}")
+            hour = settings.scheduler_hour
+            minute = settings.scheduler_minute
+            timezone_str = settings.scheduler_timezone
+            is_active = True
+        finally:
+            db.close()
 
         # Remove existing job if present
         if self.scheduler.get_job(DAILY_JOB_ID):
             self.scheduler.remove_job(DAILY_JOB_ID)
 
-        self.scheduler.add_job(
-            func=daily_post_generation_job,
-            trigger=CronTrigger(
-                hour=settings.scheduler_hour,
-                minute=settings.scheduler_minute,
-                timezone=settings.scheduler_timezone,
-            ),
-            id=DAILY_JOB_ID,
-            name="Daily LinkedIn Post Generation",
-            replace_existing=True,
-            misfire_grace_time=3600,  # 1 hour grace period if server was down
-        )
-        log.info(f"Daily job registered | id={DAILY_JOB_ID}")
+        if is_active:
+            self.scheduler.add_job(
+                func=daily_post_generation_job,
+                trigger=CronTrigger(
+                    hour=hour,
+                    minute=minute,
+                    timezone=timezone_str,
+                ),
+                id=DAILY_JOB_ID,
+                name="Daily LinkedIn Post Generation",
+                replace_existing=True,
+                misfire_grace_time=3600,  # 1 hour grace period if server was down
+            )
+            log.info(f"Daily job registered from DB | id={DAILY_JOB_ID} | time={hour:02d}:{minute:02d} {timezone_str}")
+        else:
+            log.info(f"Daily job registration skipped (is_active=False) | id={DAILY_JOB_ID}")
 
     def reschedule(
         self,

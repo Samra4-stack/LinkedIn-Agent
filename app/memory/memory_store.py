@@ -195,12 +195,14 @@ class MemoryStore:
         # Prioritize favorites not recently used
         fresh_favorites = [t for t in candidates if t in favorites and t not in recent]
         if fresh_favorites:
-            return fresh_favorites[0]
+            import random
+            return random.choice(fresh_favorites)
 
         # Topics not used in last 7 days
         fresh = [t for t in candidates if t not in recent]
         if fresh:
-            return fresh[0]
+            import random
+            return random.choice(fresh)
 
         # All topics recently used — pick least recently used
         topic_last_used: Dict[str, str] = {}
