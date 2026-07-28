@@ -33,12 +33,16 @@ async def daily_post_generation_job() -> None:
         from app.database.crud import update_scheduler_job, get_or_create_scheduler_job
         from app.services.scheduler_service import DAILY_JOB_ID
         from app.utils.helpers import now_utc
+        from app.config import settings  # <-- must be imported BEFORE use below
+        from app.services.notification_service import NotificationService
 
         db = SessionLocal()
         try:
             # Generate the post
             agent = ContentAgent(db=db)
-            draft = await agent.generate_post(link=settings.default_post_link if hasattr(settings, 'default_post_link') and settings.default_post_link else None)
+            draft = await agent.generate_post(
+                link=settings.default_post_link if hasattr(settings, 'default_post_link') and settings.default_post_link else None
+            )
 
             log.info(
                 f"Daily job completed | draft_id={draft.id} | topic={draft.topic} | "
@@ -60,20 +64,17 @@ async def daily_post_generation_job() -> None:
                 run_count=job.run_count + 1,
             )
 
-            # Send Notification
-            from app.services.notification_service import NotificationService
-            from app.config import settings
-            
             # Build preview URL — prefer app_base_url for cloud, fallback to localhost
             app_base_url_str = str(settings.app_base_url) if settings.app_base_url else ""
             if app_base_url_str and not app_base_url_str.endswith('.loca.lt'):
                 base_url = app_base_url_str.rstrip('/')
             else:
                 base_url = f"http://localhost:{settings.app_port}"
-                
+
             preview_url = f"{base_url}/api/v1/preview/{draft.id}/view"
             log.info(f"Preview URL: {preview_url}")
-            
+
+            # Send email notification
             notifier = NotificationService()
             email_sent = await notifier.send_message(
                 message=f"New LinkedIn Draft Ready!\n\nTopic: {draft.topic}\nLength: {len(draft.content)} characters\n\nLog in to review and publish your post.",

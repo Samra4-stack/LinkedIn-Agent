@@ -174,7 +174,7 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
     if not job_record.is_active:
         return SuccessResponse(message="Scheduler is paused. Skipping.")
         
-    from datetime import datetime
+    from datetime import datetime, timezone as dt_timezone
     import pytz
     
     from app.config import settings
@@ -187,13 +187,23 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
     target_time = now.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
     time_diff = (now - target_time).total_seconds() / 60.0
     
-    # If the current time is at or after the target time today
-    if time_diff >= 0:
+    log.info(
+        f"Poll check | now={now.strftime('%H:%M')} | target={target_hour:02d}:{target_minute:02d} | "
+        f"diff={time_diff:.1f} min | tz={tz}"
+    )
+    
+    # If the current time is at or after the target time today (within a 30-minute window to avoid missed fires)
+    if 0 <= time_diff <= 30:
         # Check if already ran today
         if job_record.last_run_at:
-            last_run_local = job_record.last_run_at.astimezone(tz)
+            # last_run_at from SQLite is a naive UTC datetime — make it timezone-aware before comparing
+            last_run_utc = job_record.last_run_at
+            if last_run_utc.tzinfo is None:
+                last_run_utc = last_run_utc.replace(tzinfo=dt_timezone.utc)
+            last_run_local = last_run_utc.astimezone(tz)
             # If the last run happened on or after the target time today, skip
             if last_run_local >= target_time:
+                log.info(f"Already ran today at {last_run_local.strftime('%H:%M')} — skipping.")
                 return SuccessResponse(message="Job already ran for this target time today.")
                 
         # Run it! It's past the target time and hasn't run yet today.

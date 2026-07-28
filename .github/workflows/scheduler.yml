@@ -8,7 +8,17 @@ on:
 jobs:
   poll-scheduler:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Hit Vercel Polling Endpoint
         run: |
-          curl -s -X GET "https://linked-in-agent-lilac.vercel.app/api/v1/schedule/poll"
+          echo "Polling scheduler at $(date -u)"
+          RESPONSE=$(curl -s --max-time 120 --fail-with-body \
+            -X GET "https://linked-in-agent-lilac.vercel.app/api/v1/schedule/poll")
+          EXIT_CODE=$?
+          echo "Response: $RESPONSE"
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "ERROR: curl failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+          echo "Done."
