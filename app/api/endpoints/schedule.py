@@ -143,10 +143,9 @@ async def trigger_now() -> SuccessResponse:
 async def vercel_cron_trigger() -> SuccessResponse:
     """Manually trigger post generation from Vercel Cron."""
     log.info("GET /schedule/cron-trigger — Vercel Cron triggered")
-    
+
     from app.scheduler.jobs import daily_post_generation_job
     try:
-        # Await it directly so Vercel waits for it to finish before responding
         await daily_post_generation_job()
     except Exception as e:
         log.error(f"Vercel Cron job failed: {e}")
@@ -154,10 +153,73 @@ async def vercel_cron_trigger() -> SuccessResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to run cron job: {e}",
         )
-        
+
     return SuccessResponse(
         message="Post generation triggered via Vercel Cron."
     )
+
+
+@router.get(
+    "/schedule/test-email",
+    summary="Test email only (no AI generation)",
+    description="Sends a test email directly using SMTP credentials. Use this to verify email works on Vercel.",
+    tags=["Scheduler"],
+)
+async def test_email_only():
+    """
+    Diagnostic endpoint: sends a test email without running AI generation.
+    Use this to confirm SMTP credentials are correctly set as Vercel env vars.
+    """
+    from app.config import settings
+
+    creds_status = {
+        "smtp_server": settings.smtp_server or "NOT SET",
+        "smtp_port": settings.smtp_port,
+        "smtp_user": settings.smtp_user or "NOT SET",
+        "smtp_password": f"SET ({len(settings.smtp_password)} chars)" if settings.smtp_password else "NOT SET — ADD TO VERCEL ENV VARS",
+        "notification_email": settings.notification_email or "NOT SET",
+    }
+    log.info(f"test-email diagnostic | creds={creds_status}")
+
+    if not settings.smtp_password or not settings.smtp_user or not settings.notification_email:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "SMTP credentials missing in Vercel environment variables!",
+                "fix": "Go to vercel.com → your project → Settings → Environment Variables",
+                "missing_vars_to_add": {
+                    "SMTP_SERVER": "smtp.gmail.com",
+                    "SMTP_PORT": "465",
+                    "SMTP_USER": "samratariq4544@gmail.com",
+                    "SMTP_PASSWORD": "<your 16-char Gmail App Password>",
+                    "NOTIFICATION_EMAIL": "samratariq4544@gmail.com",
+                },
+                "currently_loaded": creds_status,
+            }
+        )
+
+    from app.services.notification_service import NotificationService
+    notifier = NotificationService()
+    sent = await notifier.send_message(
+        message="Test email from LinkedIn Agent on Vercel! SMTP is working correctly.",
+        html_preview_url="https://linked-in-agent-lilac.vercel.app/docs",
+    )
+
+    if sent:
+        return {
+            "success": True,
+            "message": f"Test email sent to {settings.notification_email}! Check your inbox.",
+            "credentials": creds_status,
+        }
+    else:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "Credentials are set but email failed. Check App Password is correct.",
+                "credentials": creds_status,
+            }
+        )
+
 
 
 @router.get(
