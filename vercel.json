@@ -15,7 +15,8 @@
   "crons": [
     {
       "path": "/api/v1/schedule/cron-trigger",
-      "schedule": "32 8 * * *"
+      "schedule": "5 6 * * *"
     }
   ]
 }
+
