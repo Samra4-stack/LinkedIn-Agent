@@ -1,7 +1,7 @@
 """
 app/main.py
 ────────────
-FastAPI application entry point.
+# FastAPI application entry point.  (v2.0 – forced rebuild)
 
 Features:
 - Automatic Swagger UI at /docs
