@@ -83,18 +83,31 @@ class NotificationService:
         text = f"{message}\n\nPreview Link: {html_preview_url}"
         
         # Create HTML version
-        html = f"""
-        <html>
-          <body>
-            <h2>New LinkedIn Draft Ready!</h2>
-            <p>{message.replace(chr(10), '<br>')}</p>
-            <br>
-            <a href="{html_preview_url}" style="display: inline-block; padding: 10px 20px; background-color: #0077b5; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
-              Preview Draft Here
-            </a>
-          </body>
-        </html>
-        """
+                # Render the same preview page that the UI uses for the e‑mail body
+        from jinja2 import Environment, FileSystemLoader, select_autoescape
+        env = Environment(
+            loader=FileSystemLoader('app/templates'),
+            autoescape=select_autoescape(['html', 'xml'])
+        )
+        tmpl = env.get_template('preview.html')
+        draft_dict = {
+            'id': 0,
+            'topic': 'LinkedIn Draft',
+            'full_content': message,
+            'character_count': len(message),
+            'estimated_read_time_seconds': int(len(message.split()) / 200 * 60),
+            'image_url': None,
+            'hashtags': [],
+            'links': [],
+            'created_at': None,
+            'ai_provider': 'Agent',
+            'scheduled_time': None,
+            'edit_count': 0,
+        }
+        class DummyRequest: pass
+        dummy_req = DummyRequest()
+        dummy_req.url = html_preview_url
+        html = tmpl.render(request=dummy_req, draft=draft_dict)
 
         msg.attach(MIMEText(text, "plain", "utf-8"))
         if html_preview_url:
