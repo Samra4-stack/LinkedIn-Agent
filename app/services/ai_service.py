@@ -213,13 +213,24 @@ class AIService:
         """
         Build ordered list of providers to try.
         Starts with configured provider, then falls back to available ones.
+        Skips OpenAI if only a Groq key (gsk_) is present to avoid misleading errors.
         """
         chain = [self.provider]
-        # Add fallbacks if not already in chain
         fallbacks = ["groq", "gemini", "openai"]
         for fb in fallbacks:
             if fb not in chain:
                 chain.append(fb)
+
+        # Remove openai from chain if no real OpenAI key is set
+        # (a gsk_ key is a Groq key — using it with openai endpoint will fail)
+        has_real_openai_key = (
+            bool(settings.openai_api_key)
+            and not settings.openai_api_key.startswith("gsk_")
+        )
+        if not has_real_openai_key and "openai" in chain:
+            chain.remove("openai")
+            log.info("Skipping OpenAI provider — no real sk- key found (Groq key detected)")
+
         return chain
 
     async def _call_provider(self, provider: str, prompt: str) -> str:

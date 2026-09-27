@@ -80,38 +80,70 @@ class NotificationService:
         msg["To"] = self.to_email
 
         # Create plain-text version
-        text = f"{message}\n\nPreview Link: {html_preview_url}"
-        
-        # Create HTML version
-                # Render the same preview page that the UI uses for the e‑mail body
-        from jinja2 import Environment, FileSystemLoader, select_autoescape
-        env = Environment(
-            loader=FileSystemLoader('app/templates'),
-            autoescape=select_autoescape(['html', 'xml'])
-        )
-        tmpl = env.get_template('preview.html')
-        draft_dict = {
-            'id': 0,
-            'topic': 'LinkedIn Draft',
-            'full_content': message,
-            'character_count': len(message),
-            'estimated_read_time_seconds': int(len(message.split()) / 200 * 60),
-            'image_url': None,
-            'hashtags': [],
-            'links': [],
-            'created_at': None,
-            'ai_provider': 'Agent',
-            'scheduled_time': None,
-            'edit_count': 0,
-        }
-        class DummyRequest: pass
-        dummy_req = DummyRequest()
-        dummy_req.url = html_preview_url
-        html = tmpl.render(request=dummy_req, draft=draft_dict)
+        text = f"{message}\n\nReview your draft here: {html_preview_url}"
 
+        # Create clean HTML notification email with a clickable button
+        html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New LinkedIn Draft Ready</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#0077b5 0%,#005e96 100%);padding:36px 40px;text-align:center;">
+              <p style="margin:0;font-size:32px;">🤖</p>
+              <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.3px;">LinkedIn AI Agent</h1>
+              <p style="margin:0;color:rgba(255,255,255,0.8);font-size:14px;">Autonomous Post Generation</p>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <h2 style="margin:0 0 12px;color:#0077b5;font-size:18px;font-weight:700;">🚀 New Draft Ready for Review</h2>
+              <p style="margin:0 0 24px;color:#444;font-size:15px;line-height:1.6;">{message.replace(chr(10), '<br>')}</p>
+              <hr style="border:none;border-top:1px solid #e8eaf0;margin:24px 0;">
+              <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.5;">
+                Your AI agent has generated a new LinkedIn post draft. Click the button below to review the full content, make any edits, and approve it for publishing.
+              </p>
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="{html_preview_url}"
+                       style="display:inline-block;background:linear-gradient(135deg,#0077b5,#005e96);color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 40px;border-radius:8px;letter-spacing:0.3px;">
+                      Review Draft &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:24px 0 0;text-align:center;color:#aaa;font-size:12px;">
+                Or copy this link: <a href="{html_preview_url}" style="color:#0077b5;word-break:break-all;">{html_preview_url}</a>
+              </p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #e8eaf0;">
+              <p style="margin:0;color:#bbb;font-size:12px;">LinkedIn AI Agent &bull; Automated notification &bull; Do not reply to this email</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+        log.info("Built clean notification email with preview link")
         msg.attach(MIMEText(text, "plain", "utf-8"))
-        if html_preview_url:
-            msg.attach(MIMEText(html, "html", "utf-8"))
+        msg.attach(MIMEText(html, "html", "utf-8"))
 
         try:
             log.info(f"Connecting to SMTP server {self.server}:{self.port} using SMTP_SSL...")

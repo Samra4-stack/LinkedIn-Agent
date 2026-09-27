@@ -66,11 +66,8 @@ async def generate_post(
         from app.config import settings
         
         # Build preview URL
-        app_base_url_str = str(settings.app_base_url) if settings.app_base_url else ""
-        if app_base_url_str and not app_base_url_str.endswith('.loca.lt'):
-            base_url = app_base_url_str.rstrip('/')
-        else:
-            base_url = f"http://localhost:{settings.app_port}"
+        app_base_url_str = str(settings.app_base_url).rstrip('/') if settings.app_base_url else ""
+        base_url = app_base_url_str if app_base_url_str else f"http://localhost:{settings.app_port}"
             
         preview_url = f"{base_url}/api/v1/preview/{draft.id}/view"
         
