@@ -113,21 +113,6 @@ class AIService:
                 raise AIServiceError("openai package not installed. Run: pip install openai")
         return self._openai_client
 
-    def _get_gemini_client(self):
-        """Lazy-initialize Google Gemini client."""
-        if self._gemini_client is None:
-            try:
-                import google.generativeai as genai
-                if not settings.gemini_api_key:
-                    raise AIServiceError("GEMINI_API_KEY is not configured")
-                genai.configure(api_key=settings.gemini_api_key)
-                self._gemini_client = genai.GenerativeModel(settings.gemini_model)
-                log.info(f"Gemini client initialized | model={settings.gemini_model}")
-            except ImportError:
-                raise AIServiceError(
-                    "google-generativeai package not installed. Run: pip install google-generativeai"
-                )
-        return self._gemini_client
 
     # ── Main Generation ─────────────────────────────────────────
 

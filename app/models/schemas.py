@@ -48,12 +48,12 @@ class GenerateRequest(BaseModel):
     )
     ai_provider: Optional[str] = Field(
         default=None,
-        description="Override AI provider: 'openai' or 'gemini'",
-        json_schema_extra={"example": "openai"},
+        description="Override AI provider: 'groq', 'gemini', 'openai'",
+        json_schema_extra={"example": "groq"},
     )
     image_provider: Optional[str] = Field(
         default=None,
-        description="Override image provider: 'unsplash', 'pexels', 'pixabay', 'dalle'",
+        description="Override image provider: 'unsplash', 'pexels', 'pixabay'",
         json_schema_extra={"example": "unsplash"},
     )
     style: Optional[str] = Field(
