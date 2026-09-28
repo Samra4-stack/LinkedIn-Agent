@@ -353,24 +353,42 @@ class AIService:
         return result
 
     async def _generate_gemini(self, prompt: str) -> str:
-        """Call Google Gemini API."""
+        """Call Google Gemini API via official SDK or direct REST API."""
         if not settings.gemini_api_key:
             raise AIServiceError("GEMINI_API_KEY is not configured in .env")
 
-        model = self._get_gemini_client()
-
-        import asyncio
-        loop = asyncio.get_event_loop()
-
         full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
 
-        def _sync_call():
-            response = model.generate_content(full_prompt)
+        # Try official SDK first
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=settings.gemini_api_key)
+            model_name = settings.gemini_model.replace("-latest", "")
+            model = genai.GenerativeModel(model_name)
+            
+            import asyncio
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, lambda: model.generate_content(full_prompt))
             return response.text
+        except Exception as sdk_err:
+            log.warning(f"Gemini SDK failed ({sdk_err}), trying direct REST API fallback...")
 
-        result = await loop.run_in_executor(None, _sync_call)
-        log.debug(f"Gemini response received | model={settings.gemini_model}")
-        return result
+        # Fallback to direct HTTP REST API
+        try:
+            model_name = settings.gemini_model.replace("-latest", "")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.gemini_api_key}"
+            payload = {
+                "contents": [{"parts": [{"text": full_prompt}]}]
+            }
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                res = await client.post(url, json=payload)
+                if res.status_code != 200:
+                    raise AIServiceError(f"Gemini REST API error ({res.status_code}): {res.text}")
+                data = res.json()
+                text = data["candidates"][0]["content"]["parts"][0]["text"]
+                return text
+        except Exception as rest_err:
+            raise AIServiceError(f"Gemini generation failed: {rest_err}")
 
     # ── Hashtag Generation ──────────────────────────────────────
 
