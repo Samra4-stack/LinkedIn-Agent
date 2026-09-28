@@ -211,27 +211,50 @@ class AIService:
 
     def _build_provider_chain(self) -> List[str]:
         """
-        Build ordered list of providers to try.
-        Starts with configured provider, then falls back to available ones.
-        Skips OpenAI if only a Groq key (gsk_) is present to avoid misleading errors.
+        Build an ordered list of providers to try, based ONLY on which
+        providers have valid API keys actually configured.
+
+        Rules:
+          - groq   : included if GROQ_API_KEY is set, OR OPENAI_API_KEY starts with 'gsk_'
+          - gemini : included if GEMINI_API_KEY is set
+          - openai : included ONLY if OPENAI_API_KEY starts with 'sk-' (real OpenAI key)
         """
-        chain = [self.provider]
-        fallbacks = ["groq", "gemini", "openai"]
-        for fb in fallbacks:
-            if fb not in chain:
-                chain.append(fb)
+        available: List[str] = []
 
-        # Remove openai from chain if no real OpenAI key is set
-        # (a gsk_ key is a Groq key — using it with openai endpoint will fail)
-        has_real_openai_key = (
+        # Groq: key starts with gsk_ (stored in GROQ_API_KEY or OPENAI_API_KEY)
+        has_groq = bool(settings.effective_groq_key)
+        if has_groq:
+            available.append("groq")
+            log.info(f"Provider available: groq | model={settings.effective_groq_model}")
+
+        # Gemini: needs GEMINI_API_KEY
+        has_gemini = bool(settings.gemini_api_key)
+        if has_gemini:
+            available.append("gemini")
+            log.info(f"Provider available: gemini | model={settings.gemini_model}")
+
+        # OpenAI: ONLY if key starts with sk- (not a Groq key)
+        has_openai = (
             bool(settings.openai_api_key)
-            and not settings.openai_api_key.startswith("gsk_")
+            and settings.openai_api_key.startswith("sk-")
         )
-        if not has_real_openai_key and "openai" in chain:
-            chain.remove("openai")
-            log.info("Skipping OpenAI provider — no real sk- key found (Groq key detected)")
+        if has_openai:
+            available.append("openai")
+            log.info(f"Provider available: openai | model={settings.openai_model}")
 
-        return chain
+        if not available:
+            raise AIServiceError(
+                "No AI provider is configured. "
+                "Set GROQ_API_KEY (gsk_...) or GEMINI_API_KEY in your environment variables."
+            )
+
+        # Ensure the preferred provider is first
+        if self.provider in available and available[0] != self.provider:
+            available.remove(self.provider)
+            available.insert(0, self.provider)
+
+        log.info(f"Provider chain: {available}")
+        return available
 
     async def _call_provider(self, provider: str, prompt: str) -> str:
         """Dispatch to the correct provider."""
@@ -249,9 +272,7 @@ class AIService:
     async def _generate_groq(self, prompt: str) -> str:
         """
         Call Groq API using OpenAI-compatible SDK.
-
-        IMPORTANT: Groq's Llama models do NOT support response_format=json_object.
-        We rely on prompt-level JSON instructions instead.
+        Tries the configured model first, then falls back to known working models.
         """
         api_key = settings.effective_groq_key
         if not api_key:
@@ -261,28 +282,45 @@ class AIService:
             )
 
         client = self._get_groq_client()
-        model = settings.effective_groq_model
+        primary_model = settings.effective_groq_model
+
+        # Fallback model list — tried in order if primary fails
+        fallback_models = [
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.8-27b",
+            "allam-2-7b",
+        ]
+        # Build final model list: primary first, then fallbacks (skip duplicates)
+        models_to_try = [primary_model] + [m for m in fallback_models if m != primary_model]
 
         import asyncio
         loop = asyncio.get_event_loop()
+        last_groq_error: Optional[Exception] = None
 
-        def _sync_call():
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt},
-                ],
-                max_tokens=settings.openai_max_tokens,
-                temperature=settings.openai_temperature,
-                # NOTE: No response_format here — Groq/Llama doesn't support JSON mode
-                # on all models. The prompt instructs JSON output instead.
-            )
-            return response.choices[0].message.content
+        for model in models_to_try:
+            def _sync_call(m=model):
+                response = client.chat.completions.create(
+                    model=m,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
+                    max_tokens=settings.openai_max_tokens,
+                    temperature=settings.openai_temperature,
+                )
+                return response.choices[0].message.content
 
-        result = await loop.run_in_executor(None, _sync_call)
-        log.debug(f"Groq response received | model={model}")
-        return result
+            try:
+                result = await loop.run_in_executor(None, _sync_call)
+                log.info(f"Groq response received | model={model}")
+                return result
+            except Exception as e:
+                last_groq_error = e
+                log.warning(f"Groq model '{model}' failed: {e}. Trying next model...")
+                continue
+
+        raise AIServiceError(f"All Groq models failed. Last error: {last_groq_error}")
 
     async def _generate_openai(self, prompt: str) -> str:
         """Call standard OpenAI API (GPT-4o etc.)."""
