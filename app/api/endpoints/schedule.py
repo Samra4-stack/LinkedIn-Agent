@@ -254,8 +254,8 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
         f"diff={time_diff:.1f} min | tz={tz}"
     )
     
-    # If the current time is at or after the target time today (within a 30-minute window to avoid missed fires)
-    if 0 <= time_diff <= 30:
+    # If current time is at or after the target time today
+    if now >= target_time:
         # Check if already ran today
         if job_record.last_run_at:
             # last_run_at from SQLite is a naive UTC datetime — make it timezone-aware before comparing
@@ -269,7 +269,7 @@ async def schedule_poll(db: Session = Depends(get_db)) -> SuccessResponse:
                 return SuccessResponse(message="Job already ran for this target time today.")
                 
         # Run it! It's past the target time and hasn't run yet today.
-        log.info(f"Polling condition met! Target was {target_hour}:{target_minute}, time diff is {time_diff:.1f} mins.")
+        log.info(f"Polling condition met! Target was {target_hour:02d}:{target_minute:02d}, now is {now.strftime('%H:%M')}.")
         from app.scheduler.jobs import daily_post_generation_job
         try:
             await daily_post_generation_job()
