@@ -145,27 +145,40 @@ class NotificationService:
         msg.attach(MIMEText(text, "plain", "utf-8"))
         msg.attach(MIMEText(html, "html", "utf-8"))
 
-        try:
-            log.info(f"Connecting to SMTP server {self.server}:{self.port} using SMTP_SSL...")
-            context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(self.server, self.port, context=context) as server:
-                log.info("SMTP_SSL connection established. Logging in...")
-                server.login(self.user, self.password)
-                log.info("SMTP login successful. Sending email...")
-                server.sendmail(self.user, self.to_email, msg.as_string())
-            
-            log.info(f"Email notification sent successfully to {self.to_email}")
-            return True
-        except smtplib.SMTPAuthenticationError as e:
-            log.error(
-                f"SMTP Authentication FAILED: {e} — "
-                f"Make sure you are using a Gmail App Password (not your regular password). "
-                f"Generate one at https://myaccount.google.com/apppasswords"
-            )
-            return False
-        except smtplib.SMTPException as e:
-            log.error(f"SMTP error: {e}")
-            return False
-        except Exception as e:
-            log.error(f"Failed to send email notification: {e}", exc_info=True)
-            return False
+        import asyncio
+
+        def _send_sync() -> bool:
+            try:
+                log.info(f"Connecting to SMTP server {self.server}:{self.port}...")
+                context = ssl.create_default_context()
+                if self.port == 465:
+                    with smtplib.SMTP_SSL(self.server, self.port, context=context, timeout=15) as server:
+                        server.login(self.user, self.password)
+                        server.sendmail(self.user, self.to_email, msg.as_string())
+                else:
+                    with smtplib.SMTP(self.server, self.port, timeout=15) as server:
+                        server.starttls(context=context)
+                        server.login(self.user, self.password)
+                        server.sendmail(self.user, self.to_email, msg.as_string())
+                
+                log.info(f"Email notification sent successfully to {self.to_email}")
+                return True
+            except smtplib.SMTPAuthenticationError as e:
+                log.error(f"SMTP Authentication FAILED: {e}")
+                return False
+            except Exception as e:
+                log.warning(f"SMTP primary attempt failed ({e}), trying STARTTLS fallback on port 587...")
+                try:
+                    context = ssl.create_default_context()
+                    with smtplib.SMTP(self.server, 587, timeout=15) as server:
+                        server.starttls(context=context)
+                        server.login(self.user, self.password)
+                        server.sendmail(self.user, self.to_email, msg.as_string())
+                    log.info(f"Email sent successfully via STARTTLS (port 587) to {self.to_email}")
+                    return True
+                except Exception as fallback_err:
+                    log.error(f"SMTP fallback also failed: {fallback_err}", exc_info=True)
+                    return False
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, _send_sync)
