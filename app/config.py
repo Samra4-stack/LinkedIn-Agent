@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     linkedin_person_urn: str = Field(default="")
 
     # ─── Scheduler ───────────────────────────────────────────
-    scheduler_hour: int = Field(default=9)
+    scheduler_hour: int = Field(default=8)
     scheduler_minute: int = Field(default=0)
     scheduler_timezone: str = Field(default="Asia/Karachi")
 
