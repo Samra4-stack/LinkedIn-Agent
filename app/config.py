@@ -43,7 +43,7 @@ class Settings(BaseSettings):
 
     # Groq (OpenAI-compatible, free tier available)
     groq_api_key: str = Field(default="")
-    groq_model: str = Field(default="llama-3.3-70b-specdec")
+    groq_model: str = Field(default="openai/gpt-oss-120b")
     groq_base_url: str = Field(default="https://api.groq.com/openai/v1")
 
     # OpenAI (also used as fallback key field for Groq via OPENAI_API_KEY)
