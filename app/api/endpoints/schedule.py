@@ -221,6 +221,42 @@ async def test_email_only():
         )
 
 
+@router.get(
+    "/schedule/test-ai",
+    summary="Test AI providers directly",
+    description="Tests Groq, Gemini, and OpenAI and returns the exact status of each provider.",
+    tags=["Scheduler"],
+)
+async def test_ai_diagnostic():
+    """Diagnostic endpoint to test each AI provider."""
+    from app.config import settings
+    from app.services.ai_service import AIService
+
+    service = AIService()
+    chain = service._build_provider_chain()
+    
+    results = {
+        "configured_ai_provider": settings.ai_provider,
+        "effective_groq_key_set": bool(settings.effective_groq_key),
+        "groq_model": settings.effective_groq_model,
+        "gemini_key_set": bool(settings.gemini_api_key),
+        "openai_key_set": bool(settings.openai_api_key),
+        "provider_chain": chain,
+        "test_results": {}
+    }
+
+    prompt = "Return a JSON object: {\"hook\": \"Test hook\", \"body\": \"Test body\", \"cta\": \"Test cta\", \"full_post\": \"Test full post\", \"hashtags\": [\"test\"], \"topic_angle\": \"test\"}"
+    
+    for provider in chain:
+        try:
+            res = await service._call_provider(provider, prompt)
+            results["test_results"][provider] = {"status": "SUCCESS", "response_preview": res[:100]}
+        except Exception as e:
+            results["test_results"][provider] = {"status": "FAILED", "error": str(e)}
+
+    return results
+
+
 
 @router.get(
     "/schedule/poll",

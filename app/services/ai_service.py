@@ -162,7 +162,7 @@ class AIService:
         # Build fallback chain based on available keys
         providers_to_try = self._build_provider_chain()
 
-        last_error: Optional[Exception] = None
+        errors: Dict[str, str] = {}
         for provider in providers_to_try:
             try:
                 log.info(f"Trying provider: {provider}")
@@ -180,18 +180,15 @@ class AIService:
                 )
                 return post
 
-            except AIServiceError as e:
-                last_error = e
+            except Exception as e:
+                errors[provider] = str(e)
                 log.warning(f"Provider {provider} failed: {e}. Trying next...")
                 continue
-            except Exception as e:
-                last_error = e
-                log.warning(f"Provider {provider} error: {e}. Trying next...")
-                continue
 
+        error_details = " | ".join([f"{p}: {err}" for p, err in errors.items()])
         raise AIServiceError(
-            f"All AI providers failed. Last error: {last_error}. "
-            f"Check your API keys in .env"
+            f"All AI providers failed. Details: [{error_details}]. "
+            f"Please check your API keys."
         )
 
     def _build_provider_chain(self) -> List[str]:
